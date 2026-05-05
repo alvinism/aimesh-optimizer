@@ -1,15 +1,25 @@
-"""Stub `asusrouter` for tests so the suite runs without the real library installed."""
+"""Stub `asusrouter` for tests so the suite runs without the real library installed.
+
+Only kicks in when `asusrouter` is not already importable; in a venv where
+`pip install -e .` has installed the real library, this is a no-op.
+"""
 
 from __future__ import annotations
 
 import sys
 import types
+from importlib.util import find_spec
 
 
 def _install_asusrouter_stub() -> None:
-    if "asusrouter" in sys.modules:
+    if find_spec("asusrouter") is not None:
+        # Real library is installed — let imports go through it.
         return
-    stub = types.ModuleType("asusrouter")
+
+    asusrouter = types.ModuleType("asusrouter")
+    connection_config = types.ModuleType("asusrouter.connection_config")
+    modules_pkg = types.ModuleType("asusrouter.modules")
+    system = types.ModuleType("asusrouter.modules.system")
 
     class _AsusRouter:
         def __init__(self, **_): ...
@@ -20,12 +30,23 @@ def _install_asusrouter_stub() -> None:
 
         async def async_disconnect(self): ...
 
+    class _ARConnectionConfigKey:
+        VERIFY_SSL = "verify_ssl"
+
     class _AsusSystem:
         AIMESH_REBUILD = "re_reconnect"
 
-    stub.AsusRouter = _AsusRouter
-    stub.AsusSystem = _AsusSystem
-    sys.modules["asusrouter"] = stub
+    asusrouter.AsusRouter = _AsusRouter
+    connection_config.ARConnectionConfigKey = _ARConnectionConfigKey
+    system.AsusSystem = _AsusSystem
+    asusrouter.connection_config = connection_config
+    asusrouter.modules = modules_pkg
+    modules_pkg.system = system
+
+    sys.modules["asusrouter"] = asusrouter
+    sys.modules["asusrouter.connection_config"] = connection_config
+    sys.modules["asusrouter.modules"] = modules_pkg
+    sys.modules["asusrouter.modules.system"] = system
 
 
 _install_asusrouter_stub()

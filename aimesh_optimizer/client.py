@@ -1,7 +1,9 @@
 import logging
 from dataclasses import dataclass
 
-from asusrouter import AsusRouter, AsusSystem
+from asusrouter import AsusRouter
+from asusrouter.connection_config import ARConnectionConfigKey
+from asusrouter.modules.system import AsusSystem
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ async def trigger_aimesh_optimize(creds: RouterCreds) -> None:
         username=creds.user,
         password=creds.password,
         use_ssl=creds.use_ssl,
-        verify_ssl=creds.verify_ssl,
+        connection_config={ARConnectionConfigKey.VERIFY_SSL: creds.verify_ssl},
     )
     try:
         await router.async_connect()
